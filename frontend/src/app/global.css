@@ -8,3 +8,15 @@ body,
 body {
   font-variant-numeric: tabular-nums;
 }
+
+@media (pointer: coarse) {
+  .leaflet-touch .leaflet-bar a {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+  }
+
+  .MuiAutocomplete-clearIndicator {
+    padding: 8px;
+  }
+}
