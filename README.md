@@ -34,6 +34,7 @@ Compare three truck routes by the weather the truck will actually meet. Each rou
 - [Quick start](#quick-start)
 - [Configuration](#configuration)
 - [Tests and checks](#tests-and-checks)
+- [Deployment](#deployment)
 - [Architecture](#architecture)
 - [Project structure](#project-structure)
 - [Performance](#performance)
@@ -187,6 +188,19 @@ cd backend && ruff check . && ruff format --check .   # needs: pip install -r re
 ```
 
 The backend tests run offline: the API tests replace the routing and weather providers with fixed data, so results never depend on today's weather. They cover every boundary in the risk table, both load rules, the ranking order, checkpoint placement and ETAs, the weather-hour rule, the location budget, the heatmap grid, and the API's 200, 400, 422 and 502 responses. The frontend tests cover form validation, the truck's position along a route, the schedule's time axis and the heatmap colours.
+
+## Deployment
+
+One Docker service on [Render](https://render.com), defined in [`render.yaml`](render.yaml):
+
+1. The [`Dockerfile`](Dockerfile) builds the React app with Node, then runs Django with gunicorn on Python.
+2. Django serves the API under `/api` and the built app from the same origin, so no CORS is needed. Hashed script files are cached for a year; the page itself is never cached, so a new deploy shows at once.
+3. Render generates `DJANGO_SECRET_KEY`. The service refuses to start in production without one.
+4. Render checks `/api/health` before switching traffic to a new deploy.
+
+To deploy your own copy: push the repository to GitHub, then in Render choose **New**, **Blueprint**, and select the repository.
+
+On Render's free plan the service sleeps after about 15 minutes without traffic, and the first request after that takes 30 to 60 seconds while it starts.
 
 ## Architecture
 

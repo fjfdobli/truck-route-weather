@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: truck-route-weather
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: HTTP_USER_AGENT
+        value: truck-route-weather/1.0
