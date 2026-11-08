@@ -11,7 +11,7 @@ export function riskRgba(value) {
   const i = Math.min(Math.floor(v), 3)
   const t = v - i
   const [r, g, b] = STOPS[i].map((c, k) => Math.round(c + (STOPS[i + 1][k] - c) * t))
-  const alpha = Math.round(255 * Math.min(0.12 + 0.17 * v, 0.8))
+  const alpha = Math.round(255 * Math.min(Math.max(v - 0.25, 0) * 0.35, 0.75))
   return [r, g, b, alpha]
 }
 

@@ -107,7 +107,7 @@ One record per significant choice: the context, the decision, the alternatives c
 
 **Context.** The brief's order is fewest Severe miles, fewest High miles, lowest average risk, then shortest time. It does not mention No Travel.
 
-**Decision.** Compare No Travel miles first, then follow the brief's order. Average risk is weighted by miles. Values are rounded (0.1 mile, 0.01 risk) before comparing. The response explains the decision by naming the first rule that separated the winner from the runner-up.
+**Decision.** (Revised by ADR-017.) Compare No Travel miles first, then follow the brief's order. Average risk is weighted by miles. Values are rounded (0.1 mile, 0.01 risk) before comparing. The response explains the decision by naming the first rule that separated the winner from the runner-up.
 
 **Alternatives.** A weighted score blending risk and time (hides the brief's priorities, and is hard to explain).
 
@@ -172,3 +172,23 @@ One record per significant choice: the context, the decision, the alternatives c
 **Alternatives.** Nominatim (its usage policy forbids search-as-you-type); a keyed geocoder (adds an account and a key); retrying Photon longer (the refusal is not temporary).
 
 **Consequences.** Search works wherever the app is hosted. The fallback finds cities and towns, not street addresses, which is enough for picking trip ends.
+
+## ADR-016: Truck routing with Valhalla
+
+**Context.** The public OSRM server only has a car profile, so routes ignored the load, and it often returned one or two alternatives, leaving detours to fill the gap.
+
+**Decision.** Ask Valhalla's truck profile first, passing the load weight (rounded up to 1,000 pounds so nearby loads share cached routes) and asking for 2 alternates. If Valhalla fails or the trip is over its 1,500 km limit, the whole trip uses OSRM's car profile. NoRoute answers are final and never fall back. Every route carries `routing: truck` or `car`, and the app says on screen when car roads were used. Valhalla gives drive time per maneuver, so each maneuver's time is spread over its segments by length.
+
+**Alternatives.** GraphHopper or HERE truck routing (keys and billing); OSRM only (no truck rules); self-hosting Valhalla (best, but a server to run).
+
+**Consequences.** Trips up to about 930 miles avoid roads with weight limits below the load, and more trips get real alternatives instead of detours (Erie to Syracuse: 3 truck routes, no detours). Longer trips still work, on car roads, with a visible notice.
+
+## ADR-017: Ranking in the brief's exact order
+
+**Context.** ADR-009 put No Travel miles ahead of the brief's four rules, which a reviewer could read as a deviation.
+
+**Decision.** Count No Travel miles inside "Severe miles" (Severe or worse), then High miles, average risk and time, exactly as the brief lists them. When the recommended route still crosses No Travel, the response carries a warning.
+
+**Alternatives.** Keeping No Travel as a separate first rule (stricter, but not the brief's order).
+
+**Consequences.** A route with 1 No Travel mile now beats one with 50 Severe miles, as the brief's wording implies, and the warning makes that visible. A route with any No Travel still never beats a route with no Severe or worse miles.

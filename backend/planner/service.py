@@ -50,7 +50,7 @@ class TripPlan:
 def plan_trip(origin, destination, departure, weight_lb, interval_mi):
     plans = [
         RoutePlan(route, place_checkpoints(route, interval_mi, departure))
-        for route in routing.find_routes(origin, destination)
+        for route in routing.find_routes(origin, destination, weight_lb)
     ]
 
     cell_deg, heat_cells = corridor(plan.route for plan in plans)
@@ -73,4 +73,4 @@ def plan_trip(origin, destination, departure, weight_lb, interval_mi):
     runner_up = plans[ranking[1]].summary if len(ranking) > 1 else None
 
     heatmap = fill(Heatmap(departure, cell_deg, heat_cells), series, weight_lb)
-    return TripPlan(plans, ranking, explain(best, runner_up), warning([p.summary for p in plans]), heatmap)
+    return TripPlan(plans, ranking, explain(best, runner_up), warning([p.summary for p in plans], best), heatmap)

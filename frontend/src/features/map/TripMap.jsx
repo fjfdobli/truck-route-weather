@@ -1,12 +1,18 @@
+import { canvas } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, Tooltip, ZoomControl, useMap } from 'react-leaflet'
+import { formatMiles } from '../../shared/format'
 import { riskFill } from '../../shared/risk'
 import { formatDuration } from '../../shared/time'
 import CheckpointPopup from './CheckpointPopup'
+import RoutePopup from './RoutePopup'
 import './map.css'
 
 const US_CENTER = [39.5, -98.35]
+// Canvas for speed; lines are thin, so clicks count within 8 pixels of them.
+const RENDERER = canvas({ tolerance: 8 })
+const LABEL_AT = [0.5, 0.3, 0.7]
 const LINE = {
   selected: { color: '#1e40af', weight: 6, opacity: 0.95 },
   other: { color: '#64748b', weight: 4, opacity: 0.55 },
@@ -16,13 +22,15 @@ export default function TripMap({ plan, selectedId, onSelect, focus, showLabels 
   const routes = plan?.routes ?? []
   const ordered = [...routes].sort((a, b) => (a.id === selectedId) - (b.id === selectedId))
   const focused = focus && routes.find((r) => r.id === focus.routeId)?.checkpoints[focus.index]
+  const [popup, setPopup] = useState(null)
+  const popupRoute = popup?.plan === plan ? routes.find((r) => r.id === popup.routeId) : null
 
   return (
-    <MapContainer center={US_CENTER} zoom={4} preferCanvas zoomControl={false} className="trip-map">
+    <MapContainer center={US_CENTER} zoom={4} renderer={RENDERER} zoomControl={false} className="trip-map">
       <ZoomControl position="topright" />
       <TileLayer
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Routing <a href="https://project-osrm.org/">OSRM</a> · Search <a href="https://photon.komoot.io/">Photon</a> · Weather <a href="https://open-meteo.com/">Open-Meteo</a>'
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Routing <a href="https://valhalla.github.io/valhalla/">Valhalla</a>, <a href="https://project-osrm.org/">OSRM</a> · Search <a href="https://photon.komoot.io/">Photon</a> · Weather <a href="https://open-meteo.com/">Open-Meteo</a>'
         maxZoom={19}
       />
 
@@ -34,9 +42,16 @@ export default function TripMap({ plan, selectedId, onSelect, focus, showLabels 
           route={route}
           selected={route.id === selectedId}
           onSelect={onSelect}
+          onOpen={(routeId, latlng) => setPopup({ plan, routeId, latlng })}
           showLabel={showLabels || route.id === selectedId}
         />
       ))}
+
+      {popupRoute && (
+        <Popup position={popup.latlng} eventHandlers={{ remove: () => setPopup(null) }}>
+          <RoutePopup route={popupRoute} total={routes.length} />
+        </Popup>
+      )}
 
       {ordered.map((route) => (
         <Checkpoints key={`${route.id}-${route.id === selectedId}`} route={route} selected={route.id === selectedId} weightLb={plan.weight_lb} />
@@ -99,8 +114,9 @@ function FitToRoutes({ routes, padding = DEFAULT_PADDING }) {
   return null
 }
 
-function RouteLine({ route, selected, onSelect, showLabel }) {
-  const middle = route.geometry[Math.floor(route.geometry.length / 2)]
+function RouteLine({ route, selected, onSelect, onOpen, showLabel }) {
+  // Labels sit at different points along each route so routes that run close together don't stack them.
+  const middle = route.geometry[Math.floor(route.geometry.length * LABEL_AT[(route.rank - 1) % LABEL_AT.length])]
   const line = selected ? LINE.selected : LINE.other
   return (
     <>
@@ -112,12 +128,18 @@ function RouteLine({ route, selected, onSelect, showLabel }) {
       <Polyline
         positions={route.geometry}
         pathOptions={{ ...line, lineCap: 'round', lineJoin: 'round' }}
-        eventHandlers={{ click: () => onSelect(route.id) }}
+        eventHandlers={{
+          click: (event) => {
+            onSelect(route.id)
+            onOpen(route.id, event.latlng)
+          },
+        }}
       />
       {showLabel && (
         <CircleMarker center={middle} radius={0} interactive={false}>
           <Tooltip permanent direction="center" className={`route-label${selected ? ' route-label--selected' : ''}`}>
-            {route.name} · {formatDuration(route.duration_h)}
+            <span className="route-label__dot" style={{ background: riskFill(route.summary.worst) }} />
+            {route.rank}. {route.name} · {formatDuration(route.duration_h)} · {formatMiles(route.distance_mi)}
           </Tooltip>
         </CircleMarker>
       )}

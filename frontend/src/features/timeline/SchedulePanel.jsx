@@ -1,4 +1,4 @@
-import { Alert, Box, Checkbox, Divider, FormControlLabel, Typography } from '@mui/material'
+import { Alert, Box, Checkbox, Divider, FormControlLabel, Slider, Typography } from '@mui/material'
 import { useState } from 'react'
 import { formatHours } from '../../shared/format'
 import { RISK_LEVELS, riskFill } from '../../shared/risk'
@@ -8,6 +8,7 @@ import { axisHours } from './timelineScale'
 import Verdict from './Verdict'
 
 const HINT_KEY = 'truck-routing.playhead-hint-seen'
+const HOUR_MARKS = [0, 12, 24, 36, 48].map((value) => ({ value, label: value === 48 ? '48 hours' : String(value) }))
 
 function readHintSeen() {
   try {
@@ -40,6 +41,12 @@ export default function SchedulePanel({ plan, recommended, selectedId, onSelect,
             {plan.warning}
           </Alert>
         )}
+        {plan.routes.some((route) => route.routing === 'car') && (
+          <Alert severity="info" sx={{ mt: 1.5 }}>
+            Truck routing was not available for this trip (it covers trips up to about 930 miles), so these routes
+            follow car roads and road weight limits are not checked.
+          </Alert>
+        )}
       </Box>
 
       <Divider sx={{ my: 2 }} />
@@ -60,9 +67,25 @@ export default function SchedulePanel({ plan, recommended, selectedId, onSelect,
         />
       </Box>
 
+      <Box sx={{ px: 3.5, pb: 1 }}>
+        <Slider
+          aria-label="Forecast hour"
+          value={forecast.hour}
+          min={0}
+          max={FORECAST_HOURS}
+          step={1}
+          marks={HOUR_MARKS}
+          valueLabelDisplay="auto"
+          valueLabelFormat={(hour) => (hour === 0 ? 'Departure' : `+${formatHours(hour)}`)}
+          getAriaValueText={(hour) => `${formatHours(hour)} after departure`}
+          onChange={(_, hour) => moveTo(hour)}
+          size="small"
+        />
+      </Box>
+
       {!hintSeen && (
         <Typography variant="body2" sx={{ mx: 3, mb: 1.5, px: 1.5, py: 0.75, borderRadius: 1, bgcolor: '#eff6ff', color: 'primary.main' }}>
-          Drag the black line up or down to see the weather at each hour, or click the time and use ↑ ↓.
+          Drag the slider, or the black line in the schedule, to see the weather at each hour.
         </Typography>
       )}
 

@@ -13,11 +13,14 @@ class Summary:
     def miles(self, level):
         return self.miles_by_level.get(level, 0.0)
 
+    @property
+    def severe_or_worse_mi(self):
+        return self.miles(Risk.SEVERE) + self.miles(Risk.NO_TRAVEL)
+
     def sort_key(self):
-        # The PDF's order, with No Travel ahead of everything.
+        # The brief's order: Severe miles, High miles, average risk, travel time.
         return (
-            round(self.miles(Risk.NO_TRAVEL), 1),
-            round(self.miles(Risk.SEVERE), 1),
+            round(self.severe_or_worse_mi, 1),
             round(self.miles(Risk.HIGH), 1),
             round(self.avg_risk, 2),
             round(self.duration_h, 2),
@@ -44,12 +47,11 @@ def explain(best, runner_up):
         return 'Only one route was found.'
 
     rules = [
-        (Risk.NO_TRAVEL, 'No Travel'),
-        (Risk.SEVERE, 'Severe'),
-        (Risk.HIGH, 'High'),
+        (lambda s: s.severe_or_worse_mi, 'Severe or No Travel'),
+        (lambda s: s.miles(Risk.HIGH), 'High'),
     ]
-    for level, label in rules:
-        mine, theirs = round(best.miles(level), 1), round(runner_up.miles(level), 1)
+    for miles_of, label in rules:
+        mine, theirs = round(miles_of(best), 1), round(miles_of(runner_up), 1)
         if mine != theirs:
             return f'Fewest {label} miles: {mine:g} against {theirs:g} on the next best route.'
 
@@ -63,9 +65,14 @@ def explain(best, runner_up):
     return f'Same weather risk as the alternatives, and {saved:.1f} hours faster than the next best route.'
 
 
-def warning(summaries):
+def warning(summaries, best):
     if summaries and all(s.miles(Risk.NO_TRAVEL) > 0 for s in summaries):
         return 'Every route crosses No Travel conditions. Consider a later departure.'
+    if best.miles(Risk.NO_TRAVEL) > 0:
+        return (
+            f'The recommended route still crosses {best.miles(Risk.NO_TRAVEL):.0f} miles of No Travel conditions. '
+            'Consider a later departure.'
+        )
     if any(s.unknown_mi > 0 for s in summaries):
         return 'Part of the trip is beyond the weather forecast, so those miles are not rated.'
     return None

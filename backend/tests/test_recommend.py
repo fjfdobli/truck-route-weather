@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 from django.test import SimpleTestCase
 
-from planner import explain, summarize
+from planner import explain, summarize, warning
 from risk import Risk
 
 
@@ -47,14 +47,27 @@ class RankingTests(SimpleTestCase):
     def test_then_shortest_time(self):
         self.assertEqual(best_of(route(6, low=100), route(5, low=120)), 1)
 
-    def test_any_no_travel_ranks_last(self):
-        self.assertEqual(best_of(route(4, low=99, no_travel=1), route(9, low=50, severe=50)), 1)
+    def test_no_travel_miles_count_as_severe(self):
+        self.assertEqual(best_of(route(4, low=90, no_travel=10), route(9, low=95, severe=5)), 1)
+
+    def test_a_clean_route_beats_any_no_travel(self):
+        self.assertEqual(best_of(route(4, low=99, no_travel=1), route(9, low=50, high=50)), 1)
+
+
+class WarningTests(SimpleTestCase):
+    def test_flags_no_travel_on_the_recommended_route(self):
+        best = route(4, low=90, no_travel=3)
+        self.assertIn('crosses 3 miles of No Travel', warning([best, route(5, low=80, severe=20)], best))
+
+    def test_quiet_when_the_recommended_route_is_clear(self):
+        best = route(4, low=100)
+        self.assertIsNone(warning([best, route(5, low=99, no_travel=1)], best))
 
 
 class ExplainTests(SimpleTestCase):
     def test_names_the_rule_that_decided(self):
         text = explain(route(6, low=100), route(4, low=90, severe=10))
-        self.assertIn('Fewest Severe miles: 0 against 10', text)
+        self.assertIn('Fewest Severe or No Travel miles: 0 against 10', text)
 
     def test_time_when_weather_ties(self):
         text = explain(route(4, low=100), route(5.5, low=100))

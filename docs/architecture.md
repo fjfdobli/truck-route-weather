@@ -55,12 +55,12 @@ Text is geocoded with Photon, limited to a North America bounding box so suggest
 
 ### 4.2 Three routes (`routing/service.py`)
 
-1. Ask OSRM for up to 3 alternatives.
+1. Ask Valhalla's truck profile, with the load weight, for up to 3 alternatives. If it fails or the trip is over its 1,500 km limit, ask OSRM's car profile instead, and use the same router for every route of the trip.
 2. If fewer than 3 are distinct, request detour routes through side waypoints. A waypoint sits at the trip's midpoint, offset perpendicular to the trip by 8, 15, 30 or 45 percent of its straight-line length, on both sides. The 8 candidates are fetched 4 at a time.
 3. Keep a candidate only if it is no slower than 2.5 times the fastest route and shares less than 80 percent of its road with every route already kept. Overlap is measured on sets of coordinates rounded to about 100 m. That rejects near-copies and the out-and-back spurs a waypoint on a dead-end road produces.
 4. Take the fastest survivors until there are 3.
 
-Each route keeps its full geometry plus a per-segment distance and duration from OSRM, so later steps can place points and times anywhere along the road. Routes are named after the two highways they spend the most distance on.
+Each route keeps its full geometry plus a per-segment distance and duration (OSRM gives these directly; for Valhalla each maneuver's time is spread over its segments by length), so later steps can place points and times anywhere along the road. Routes are named after the two highways they spend the most distance on; when two routes share both, the second name becomes the longest road only that route uses.
 
 ### 4.3 Checkpoints and ETAs (`planner/checkpoints.py`)
 
@@ -86,13 +86,12 @@ For the heatmap, `intensity()` returns the same scale as a continuous number fro
 
 Each route gets miles per level, a mile-weighted average risk and its drive time. Routes are sorted by one key, in this order:
 
-1. No Travel miles
-2. Severe miles
-3. High miles
-4. Average risk
-5. Drive time
+1. Severe or worse miles (Severe plus No Travel)
+2. High miles
+3. Average risk
+4. Drive time
 
-Values are rounded before comparing, so floating-point noise never decides a winner. The reason line names the first rule in that order where the winner beat the runner-up. If every route crosses No Travel, the response warns that a later departure may be safer.
+Values are rounded before comparing, so floating-point noise never decides a winner. The reason line names the first rule in that order where the winner beat the runner-up. No Travel miles count toward Severe miles, since No Travel is worse. If the recommended route still crosses No Travel, or every route does, the response warns that a later departure may be safer.
 
 ### 4.7 Heatmap and the location budget (`planner/heatmap.py`, `planner/service.py`)
 
@@ -168,7 +167,7 @@ Provider error messages never include request URLs. Weather that runs past the f
 What would change, in order, if this served many users:
 
 1. **Redis** for the cache (one setting), shared across processes.
-2. **Self-hosted OSRM with a truck profile**, plus Photon and Open-Meteo instances. This removes the rate limits and fixes truck restrictions.
+2. **Self-hosted Valhalla**, plus Photon and Open-Meteo instances. This removes the rate limits and the 1,500 km cap on truck routing.
 3. **A tile provider or tile server** instead of the public OpenStreetMap tiles, whose usage policy is meant for light use.
 4. **A background job queue** for very long trips, returning a plan ID the UI polls.
 5. **A precomputed national weather grid** refreshed hourly, so plans read from storage instead of calling the forecast API per request.

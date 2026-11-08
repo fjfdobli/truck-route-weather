@@ -17,5 +17,6 @@ flowchart LR
     end
 
     Routing --> Photon[(Photon search)]
-    Routing --> OSRM[(OSRM routing)]
+    Routing --> Valhalla[(Valhalla truck routing)]
+    Routing -.->|fallback| OSRM[(OSRM car routing)]
     Weather --> OpenMeteo[(Open-Meteo forecast)]

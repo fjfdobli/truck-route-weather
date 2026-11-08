@@ -1,5 +1,5 @@
 from .checkpoints import Checkpoint, place_checkpoints, truck_seconds
-from .recommend import Summary, explain, summarize
+from .recommend import Summary, explain, summarize, warning
 from .service import RoutePlan, TripPlan, plan_trip
 
 __all__ = [
@@ -12,4 +12,5 @@ __all__ = [
     'plan_trip',
     'summarize',
     'truck_seconds',
+    'warning',
 ]

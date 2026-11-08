@@ -129,7 +129,8 @@ Trimmed to one route, two checkpoints and two heatmap cells:
 
 | Field | Meaning |
 |---|---|
-| `rank` | 1 is the recommendation. Order: No Travel miles, Severe miles, High miles, average risk, drive time. |
+| `rank` | 1 is the recommendation. Order: Severe or worse miles (Severe plus No Travel), High miles, average risk, drive time. |
+| `routing` | `truck` when Valhalla planned the route with the load weight, `car` when OSRM did. |
 | `duration_h`, `arrival` | Truck drive time (car times capped at 65 mph) and arrival |
 | `summary.*_mi` | Miles at each risk level. `unknown_mi` is beyond the forecast. They add up to `distance_mi`. |
 | `summary.avg_risk` | Mile-weighted average, from 0 (Low) to 4 (No Travel) |

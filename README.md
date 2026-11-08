@@ -6,7 +6,7 @@
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![MUI](https://img.shields.io/badge/MUI-9-007FFF?logo=mui&logoColor=white)
 ![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-79%20passing-2E7D32)
+![Tests](https://img.shields.io/badge/tests-91%20passing-2E7D32)
 
 Compare three truck routes by the weather the truck will actually meet. Each route is checked every 10, 25 or 50 miles at the truck's estimated arrival time, rated with the brief's risk and load rules, and ranked so the safest reasonable route comes first.
 
@@ -54,7 +54,8 @@ Compare three truck routes by the weather the truck will actually meet. Each rou
 | ![MUI](https://img.shields.io/badge/-MUI-007FFF?logo=mui&logoColor=white) | Material UI 9 | Form controls and layout |
 | ![Leaflet](https://img.shields.io/badge/-Leaflet-199900?logo=leaflet&logoColor=white) | Leaflet 1.9 and React Leaflet 5 | Interactive map |
 | ![OpenStreetMap](https://img.shields.io/badge/-OpenStreetMap-7EBC6F?logo=openstreetmap&logoColor=white) | OpenStreetMap | Map tiles and road data |
-| ![OSRM](https://img.shields.io/badge/-OSRM-4A5568) | OSRM | Driving routes and alternatives |
+| ![Valhalla](https://img.shields.io/badge/-Valhalla-4A5568) | Valhalla | Truck routes and alternatives, using the load weight |
+| ![OSRM](https://img.shields.io/badge/-OSRM-4A5568) | OSRM | Car routes when the truck router cannot answer |
 | ![Photon](https://img.shields.io/badge/-Photon-4A5568) | Photon | Place search |
 | ![Open-Meteo](https://img.shields.io/badge/-Open--Meteo-4A5568) | Open-Meteo | Hourly forecasts: wind, rain, snow |
 | ![Vitest](https://img.shields.io/badge/-Vitest-6E9F18?logo=vitest&logoColor=white) | Vitest and Django's test runner | Automated tests |
@@ -65,7 +66,7 @@ Compare three truck routes by the weather the truck will actually meet. Each rou
 2. **Read the verdict** at the top of the panel: which route to take, when it arrives, how much serious weather it meets, and why it won.
 3. **Compare the routes.** The map shows all three, with the recommended one in blue and a coloured dot at every checkpoint. The schedule shows each route as a lane where time runs downward, coloured by the risk met at each hour.
 4. **Look closer.** Click a checkpoint for its distance from the start, ETA, wind, rain and snow, and why it got its level. Hover a lane to circle that spot on the map.
-5. **Move through time.** Drag the playhead in the schedule, or use the arrow keys. The weather layer and the three trucks on the map move with it, up to 48 hours after departure.
+5. **Move through time.** Drag the forecast slider, or the playhead in the schedule, or use the arrow keys. The weather layer and the three trucks on the map move with it, up to 48 hours after departure.
 6. **Choose and adjust.** Click a route or lane to select it. Press **Change trip** (or click the trip summary) to change any part of it, including the places, and compare again. **Cancel** returns to the current results.
 
 The full manual, covering each part of the screen, the colours, keyboard controls and every message, is in [docs/user-guide.md](docs/user-guide.md).
@@ -109,7 +110,7 @@ What happens between pressing **Compare routes** and seeing the result:
 | Checkpoints | Where and when the truck is | Measured along the road; truck speed capped at 65 mph |
 | Weather | What the truck meets at each checkpoint | The forecast for the hour the truck is there, not the departure hour |
 | Risk | How dangerous each checkpoint is | The worst of wind (after the load rule), rain and snow |
-| Rank | Which route is safest | Fewest No Travel, Severe and High miles first; time breaks ties |
+| Rank | Which route is safest | Fewest Severe (or worse) miles, then High miles, then average risk; time breaks ties |
 | Present | What the user sees | Verdict, map, schedule, and 49 hourly weather frames built once |
 
 The full logic of each stage is in [docs/architecture.md](docs/architecture.md#4-backend-logic-step-by-step).
@@ -124,9 +125,9 @@ The full logic of each stage is in [docs/architecture.md](docs/architecture.md#4
 | 3 route options from a routing API | Router alternatives, topped up with detour routes; near-duplicates removed | `backend/routing/service.py` |
 | Weather every 10 / 25 / 50 miles at the truck's ETA | Checkpoints measured along the road; each ETA comes from the driving time to that exact point | `backend/planner/checkpoints.py`, `backend/weather/openmeteo.py` |
 | Risk and load rules | Table-driven rules with a test at every boundary | `backend/risk/rules.py`, `backend/tests/test_risk.py` |
-| Recommend the best route | Ranked by No Travel, Severe and High miles, then mile-weighted average risk, then time, with a one-line reason | `backend/planner/recommend.py` |
+| Recommend the best route | Ranked in the brief's order: Severe miles (No Travel counted as Severe or worse), High miles, mile-weighted average risk, time; a one-line reason and a warning if the pick still crosses No Travel | `backend/planner/recommend.py` |
 | Routes, checkpoints, risk, ETAs and summaries on a map | Labelled route lines, risk-coloured checkpoints with detail popups, route lanes in the schedule | `frontend/src/features/map`, `frontend/src/features/timeline` |
-| Weather heatmap with a 0 to 48 hour slider | Hourly risk grid along the corridor; the schedule's playhead moves the heatmap and the trucks | `backend/planner/heatmap.py`, `frontend/src/features/forecast` |
+| Weather heatmap with a 0 to 48 hour slider | Hourly risk grid along the corridor; a 0 to 48 hour slider (and the schedule's playhead) moves the heatmap and the trucks | `backend/planner/heatmap.py`, `frontend/src/features/forecast` |
 
 How the risk boundaries in the brief were read (for example, 0.25 in/hr of rain counts as High) is recorded in [docs/decisions.md](docs/decisions.md#adr-007-reading-the-risk-table).
 
@@ -169,7 +170,7 @@ Both apps run with no configuration. To change a setting, set it as an environme
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated host names |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Where the frontend is served from |
 | `HTTP_USER_AGENT` | `truck-routing-demo/0.1` | Identifies the app to the free routing and search servers, as their policies ask |
-| `OSRM_URL`, `PHOTON_URL`, `OPEN_METEO_URL` | public servers | Point at self-hosted instances to remove rate limits |
+| `VALHALLA_URL`, `OSRM_URL`, `PHOTON_URL`, `OPEN_METEO_URL` | public servers | Point at self-hosted instances to remove rate limits |
 | `GEOCODE_FALLBACK_URL` | Open-Meteo place search | Used when Photon does not answer |
 | `TRUCK_MAX_MPH` | `65` | Speed cap applied to the router's car driving times |
 
@@ -182,7 +183,7 @@ Both apps run with no configuration. To change a setting, set it as an environme
 ## Tests and checks
 
 ```bash
-cd backend && python manage.py test tests     # 56 tests
+cd backend && python manage.py test tests     # 67 tests
 cd frontend && npm test                       # 23 tests
 cd frontend && npm run lint                   # oxlint
 cd backend && ruff check . && ruff format --check .   # needs: pip install -r requirements-dev.txt
@@ -207,7 +208,7 @@ On Render's free plan the service sleeps after about 15 minutes without traffic,
 
 A **modular monolith**: one Django service and one React app, each split by capability, with one-way dependencies.
 
-![The React app calls the Django service, which uses Photon, OSRM and Open-Meteo](docs/diagrams/architecture.svg)
+![The React app calls the Django service, which uses Photon, Valhalla (OSRM as fallback) and Open-Meteo](docs/diagrams/architecture.svg)
 
 <sub>Diagram source: [docs/diagrams/architecture.mmd](docs/diagrams/architecture.mmd)</sub>
 
@@ -225,7 +226,7 @@ The full request flow, the algorithms and their complexity are in [docs/architec
 backend/
   api/         HTTP boundary: request validation, views, JSON shaping
   planner/     one trip end to end: checkpoints, ranking, heatmap
-  routing/     place search and routes (Photon, OSRM)
+  routing/     place search and routes (Photon, Valhalla, OSRM)
   weather/     hourly forecasts (Open-Meteo), batched and cached
   risk/        the brief's risk and load rules (pure functions)
   common/      geometry helpers and the shared HTTP client
@@ -260,7 +261,7 @@ Measured locally on a typical laptop and home connection:
 
 These are deliberate trade-offs for a free, keyless setup. Each has a known fix.
 
-- **Car routing, not truck routing.** The public OSRM server only offers a car profile, so bridge heights, weight limits and hazmat rules are not considered, and a route between two US places can pass through Canada. Fix: a truck-aware router (GraphHopper, HERE or a self-hosted OSRM truck profile).
+- **Truck routing up to about 930 miles.** Routes come from Valhalla's truck profile, which avoids roads with weight limits below the load. The public server refuses trips over 1,500 km, so longer trips fall back to OSRM's car routing, and the app says so on screen. Bridge heights and hazmat rules use Valhalla's defaults. Fix: a self-hosted Valhalla with no distance cap.
 - **Routes 2 and 3 can be detours.** When the router returns fewer than three alternatives, the extra routes come from side waypoints. They are real roads, but not always the alternatives a dispatcher would choose.
 - **No hours-of-service breaks.** ETAs assume continuous driving, so on trips past about 11 hours the truck reaches later checkpoints sooner than a legal schedule would. Fix: insert the 30-minute and 10-hour breaks into the ETA calculation.
 - **Free API limits.** Open-Meteo's free tier allows 600 locations a minute and 10,000 a day. One plan is capped at about 300 locations, which also coarsens the weather grid on very long trips. Fix: a paid key or a self-hosted Open-Meteo.
@@ -289,6 +290,6 @@ Iterative and incremental (agile in practice, not waterfall). The brief fixed th
 ## Credits
 
 - Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors
-- Routing by [OSRM](https://project-osrm.org/), place search by [Photon](https://photon.komoot.io/)
+- Routing by [Valhalla](https://valhalla.github.io/valhalla/) (FOSSGIS public server) and [OSRM](https://project-osrm.org/), place search by [Photon](https://photon.komoot.io/)
 - Weather data by [Open-Meteo](https://open-meteo.com/) (CC BY 4.0)
 - Truck icon from [Material Icons](https://fonts.google.com/icons) (Apache 2.0)

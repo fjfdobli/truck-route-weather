@@ -90,6 +90,7 @@ How the table's shared edges are read (for example, why exactly 0.25 in/hr of ra
 
 ## 6. Moving through time
 
+- **Drag the forecast slider** under "Weather at" to move through the 48 hours.
 - **Drag** anywhere in the schedule's lanes to move the playhead. The dark pill on the left shows its time.
 - **Keyboard:** click the pill (or Tab to it), then use **Up** and **Down** for 1 hour, **Page Up** and **Page Down** for 6 hours, and **Home** and **End** for departure and 48 hours.
 - **Weather layer.** The coloured haze on the map is the risk along the corridor at the playhead's time. Use the **Weather layer** checkbox to hide or show it.
@@ -123,7 +124,7 @@ How the table's shared edges are read (for example, why exactly 0.25 in/hr of ra
 
 **Why are all the lanes green?** The weather along those routes is calm at those hours. Try a trip through an area with a storm in the news to see other colours.
 
-**Why is a slower route recommended?** Safety comes first: the app ranks by No Travel, Severe and High miles before time. The verdict's second line names the deciding rule.
+**Why is a slower route recommended?** Safety comes first: the app ranks by Severe (or worse) miles, then High miles, then average risk, before time. The verdict's second line names the deciding rule.
 
 **Why does a US trip pass through Canada?** The free routing service plans for cars and does not avoid borders. Check border crossings separately (see the README's known limitations).
 

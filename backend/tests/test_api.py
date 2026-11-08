@@ -56,7 +56,7 @@ class PlanEndpointTests(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data['recommended_id'], 1)
-        self.assertIn('Fewest Severe miles', data['reason'])
+        self.assertIn('Fewest Severe or No Travel miles', data['reason'])
 
         windy = data['routes'][0]
         self.assertEqual(windy['rank'], 2)

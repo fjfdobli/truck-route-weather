@@ -36,6 +36,7 @@ def route_json(index, plan, rank):
         'id': index,
         'rank': rank,
         'name': route.name or f'Route {index + 1}',
+        'routing': route.profile,
         'distance_mi': round(miles(route.distance_m), 1),
         'duration_h': round(summary.duration_h, 2),
         'arrival': plan.arrival,

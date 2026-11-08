@@ -8,6 +8,11 @@ describe('riskRgba', () => {
     expect(riskRgba(4).slice(0, 3)).toEqual([127, 29, 29])
   })
 
+  it('leaves Low clear so only risky weather shows', () => {
+    expect(riskRgba(0)[3]).toBe(0)
+    expect(riskRgba(1)[3]).toBeGreaterThan(50)
+  })
+
   it('gets more opaque as risk rises, and clamps out-of-range values', () => {
     expect(riskRgba(0)[3]).toBeLessThan(riskRgba(2)[3])
     expect(riskRgba(9)).toEqual(riskRgba(4))

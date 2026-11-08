@@ -1,10 +1,10 @@
 flowchart TB
     A["Step 1: You enter the trip<br/>From, To, departure, load weight, check spacing"]
     B["Step 2: Find the places<br/>Photon place search, US, Canada and Mexico"]
-    C["Step 3: Get three different routes<br/>OSRM routes, plus detours if it returns fewer than three"]
+    C["Step 3: Get three different routes<br/>Valhalla truck routes, plus detours if it returns fewer than three"]
     D["Step 4: Place checkpoints<br/>every 10, 25 or 50 miles, with the time the truck gets there"]
     E["Step 5: Get the weather at those times<br/>Open-Meteo forecast for each checkpoint's place and hour"]
     F["Step 6: Rate each checkpoint<br/>risk table and load rules: Low to No Travel"]
-    G["Step 7: Rank the routes<br/>fewest No Travel, Severe and High miles, then risk, then time"]
+    G["Step 7: Rank the routes<br/>fewest Severe (or worse) miles, then High miles, then risk, then time"]
     H["Step 8: You see the result<br/>verdict, map, schedule and the 48-hour weather layer"]
     A --> B --> C --> D --> E --> F --> G --> H
