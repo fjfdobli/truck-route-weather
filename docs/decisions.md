@@ -162,3 +162,13 @@ One record per significant choice: the context, the decision, the alternatives c
 **Alternatives.** Full-colour tiles (colour clash); a keyed light style from MapTiler or Stadia (best look, but adds an account and key).
 
 **Consequences.** No key needed. Heavy production use should move to a tile provider, since the public OpenStreetMap tile servers are meant for light use.
+
+## ADR-015: A fallback for place search
+
+**Context.** After deployment, every place search failed. Photon answered from a home connection but refused connections from the hosting provider's servers, while OSRM and Open-Meteo worked from the same servers. Each search retried for about 5 seconds and then showed "No matching place".
+
+**Decision.** Photon gets one try with a 4-second timeout. If it fails, search uses Open-Meteo's place search and keeps using it for 5 minutes before trying Photon again. The fallback searches the text before the first comma and ranks results that match the rest ("Austin, Texas") first. If both fail, the field says search is not responding instead of saying nothing matched.
+
+**Alternatives.** Nominatim (its usage policy forbids search-as-you-type); a keyed geocoder (adds an account and a key); retrying Photon longer (the refusal is not temporary).
+
+**Consequences.** Search works wherever the app is hosted. The fallback finds cities and towns, not street addresses, which is enough for picking trip ends.

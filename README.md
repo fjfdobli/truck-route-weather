@@ -6,7 +6,7 @@
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![MUI](https://img.shields.io/badge/MUI-9-007FFF?logo=mui&logoColor=white)
 ![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-74%20passing-2E7D32)
+![Tests](https://img.shields.io/badge/tests-79%20passing-2E7D32)
 
 Compare three truck routes by the weather the truck will actually meet. Each route is checked every 10, 25 or 50 miles at the truck's estimated arrival time, rated with the brief's risk and load rules, and ranked so the safest reasonable route comes first.
 
@@ -170,6 +170,7 @@ Both apps run with no configuration. To change a setting, set it as an environme
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Where the frontend is served from |
 | `HTTP_USER_AGENT` | `truck-routing-demo/0.1` | Identifies the app to the free routing and search servers, as their policies ask |
 | `OSRM_URL`, `PHOTON_URL`, `OPEN_METEO_URL` | public servers | Point at self-hosted instances to remove rate limits |
+| `GEOCODE_FALLBACK_URL` | Open-Meteo place search | Used when Photon does not answer |
 | `TRUCK_MAX_MPH` | `65` | Speed cap applied to the router's car driving times |
 
 **Frontend (`frontend/.env`)**
@@ -181,7 +182,7 @@ Both apps run with no configuration. To change a setting, set it as an environme
 ## Tests and checks
 
 ```bash
-cd backend && python manage.py test tests     # 51 tests
+cd backend && python manage.py test tests     # 56 tests
 cd frontend && npm test                       # 23 tests
 cd frontend && npm run lint                   # oxlint
 cd backend && ruff check . && ruff format --check .   # needs: pip install -r requirements-dev.txt
@@ -263,6 +264,7 @@ These are deliberate trade-offs for a free, keyless setup. Each has a known fix.
 - **Routes 2 and 3 can be detours.** When the router returns fewer than three alternatives, the extra routes come from side waypoints. They are real roads, but not always the alternatives a dispatcher would choose.
 - **No hours-of-service breaks.** ETAs assume continuous driving, so on trips past about 11 hours the truck reaches later checkpoints sooner than a legal schedule would. Fix: insert the 30-minute and 10-hour breaks into the ETA calculation.
 - **Free API limits.** Open-Meteo's free tier allows 600 locations a minute and 10,000 a day. One plan is capped at about 300 locations, which also coarsens the weather grid on very long trips. Fix: a paid key or a self-hosted Open-Meteo.
+- **Place search fallback is names only.** When Photon does not answer, search falls back to Open-Meteo, which finds cities and towns but not street addresses. Fix: a self-hosted Photon or a keyed geocoder.
 - **In-memory cache.** Each server process has its own cache. Fix: switch `CACHES` to Redis when running more than one process.
 - **Times are shown in the viewer's time zone**, not the truck's local time along the route.
 - **Forecast window.** Departures can be at most 5 days ahead, so the whole trip and the 48-hour window stay inside the 8-day forecast.

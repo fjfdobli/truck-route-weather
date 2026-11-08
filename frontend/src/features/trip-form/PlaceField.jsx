@@ -7,7 +7,7 @@ const labelOf = (place) => (typeof place === 'string' ? place : place?.label ?? 
 export default function PlaceField({ id, label, value, onChange, error, placeholder }) {
   const [input, setInput] = useState(labelOf(value))
   // Suggestions remember the text they were found for, so older results never show under newer text.
-  const [results, setResults] = useState({ query: '', places: [] })
+  const [results, setResults] = useState({ query: '', places: [], failed: false })
 
   const query = input.trim()
   const searchable = query.length >= 3 && !(typeof value === 'object' && value?.label === input)
@@ -20,9 +20,9 @@ export default function PlaceField({ id, label, value, onChange, error, placehol
     const controller = new AbortController()
     const timer = setTimeout(async () => {
       try {
-        setResults({ query, places: await searchPlaces(query, controller.signal) })
+        setResults({ query, places: (await searchPlaces(query, controller.signal)) ?? [], failed: false })
       } catch (err) {
-        if (err.name !== 'AbortError') setResults({ query, places: [] })
+        if (err.name !== 'AbortError') setResults({ query, places: [], failed: true })
       }
     }, 250)
 
@@ -41,7 +41,11 @@ export default function PlaceField({ id, label, value, onChange, error, placehol
       inputValue={input}
       loading={loading}
       loadingText="Searching…"
-      noOptionsText="No matching place in the US, Canada or Mexico"
+      noOptionsText={
+        results.failed
+          ? 'Place search is not responding. Keep typing to try again.'
+          : 'No matching place in the US, Canada or Mexico'
+      }
       filterOptions={(all) => all}
       getOptionLabel={labelOf}
       isOptionEqualToValue={(a, b) => a.lat === b.lat && a.lon === b.lon}

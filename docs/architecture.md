@@ -51,7 +51,7 @@ Inside a feature, rules, state and view are separated. For example, the trip for
 
 ### 4.1 Places (`routing/geocode.py`)
 
-Text is geocoded with Photon, limited to a North America bounding box so suggestions stay on one road network. Duplicate labels (a city and its county) are collapsed. Results are cached for 24 hours. Any place sent with coordinates is checked against the same service area before routing starts, so an impossible trip fails fast with a field error.
+Text is geocoded with Photon, limited to a North America bounding box so suggestions stay on one road network. Duplicate labels (a city and its county) are collapsed. Results are cached for 24 hours. Photon refuses some cloud server addresses, so it gets one try with a 4-second timeout; if that fails, search moves to Open-Meteo's place search for 5 minutes (ADR-015). Any place sent with coordinates is checked against the same service area before routing starts, so an impossible trip fails fast with a field error.
 
 ### 4.2 Three routes (`routing/service.py`)
 

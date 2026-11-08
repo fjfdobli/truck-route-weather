@@ -5,6 +5,7 @@ from django.conf import settings
 
 TIMEOUT_S = 15
 RETRY_DELAYS_S = (1, 3)
+RETRIES = len(RETRY_DELAYS_S)
 RETRY_STATUSES = {429, 500, 502, 503, 504}
 
 
@@ -19,23 +20,23 @@ class ProviderError(Exception):
 _session = requests.Session()
 
 
-def get_json(url, params=None):
+def get_json(url, params=None, retries=RETRIES, timeout=TIMEOUT_S):
     host = url.split('/')[2]
-    for attempt in range(len(RETRY_DELAYS_S) + 1):
+    for attempt in range(retries + 1):
         try:
             response = _session.get(
                 url,
                 params=params,
-                timeout=TIMEOUT_S,
+                timeout=timeout,
                 headers={'User-Agent': settings.HTTP_USER_AGENT},
             )
         except (requests.ConnectionError, requests.Timeout) as exc:
-            if attempt < len(RETRY_DELAYS_S):
+            if attempt < retries:
                 time.sleep(RETRY_DELAYS_S[attempt])
                 continue
             raise ProviderError(f'{host} did not respond. Try again shortly.') from exc
 
-        if response.status_code in RETRY_STATUSES and attempt < len(RETRY_DELAYS_S):
+        if response.status_code in RETRY_STATUSES and attempt < retries:
             time.sleep(RETRY_DELAYS_S[attempt])
             continue
         if response.status_code == 429:
