@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from datetime import timedelta
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 
 import risk
 import weather
@@ -13,10 +13,10 @@ CELL_SIZES = (0.3, 0.5, 1.0, 1.5, 2.0, 3.0)
 
 @dataclass
 class Heatmap:
-    start: object  # datetime of hour 0
+    start: datetime  # hour 0
     cell_deg: float
     cells: list
-    values: list = None
+    values: list = field(default_factory=list)
 
 
 def corridor(routes):
@@ -25,8 +25,8 @@ def corridor(routes):
     for cell_deg in CELL_SIZES:
         cells = _around(samples, cell_deg)
         if len(cells) <= MAX_CELLS:
-            break
-    return cell_deg, cells
+            return cell_deg, cells
+    return CELL_SIZES[-1], _around(samples, CELL_SIZES[-1])
 
 
 def fill(heatmap, series, weight_lb):

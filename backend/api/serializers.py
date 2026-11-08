@@ -11,10 +11,10 @@ class PlaceSerializer(serializers.Serializer):
     lat = serializers.FloatField(required=False, min_value=-90, max_value=90)
     lon = serializers.FloatField(required=False, min_value=-180, max_value=180)
 
-    def validate(self, data):
-        if ('lat' in data) != ('lon' in data):
+    def validate(self, attrs):
+        if ('lat' in attrs) != ('lon' in attrs):
             raise serializers.ValidationError('Send both lat and lon, or neither.')
-        return data
+        return attrs
 
 
 class PlanRequestSerializer(serializers.Serializer):

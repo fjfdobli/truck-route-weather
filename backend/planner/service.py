@@ -1,12 +1,13 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import risk
 import routing
 import weather
+from routing import Route
 
 from .checkpoints import place_checkpoints
 from .heatmap import Heatmap, corridor, fill
-from .recommend import explain, summarize, warning
+from .recommend import Summary, explain, summarize, warning
 
 # Open-Meteo's free tier allows 600 locations a minute. Checkpoints use at most 200
 # and the heatmap 100, so one plan costs about half a minute's budget.
@@ -17,17 +18,16 @@ CHECKPOINT_CELL_SIZES = (0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.75, 1.0)
 def checkpoint_grid(checkpoints):
     """The finest weather grid that keeps every checkpoint within the location budget."""
     for cell_deg in CHECKPOINT_CELL_SIZES:
-        cells = {weather.snap(cp.lat, cp.lon, cell_deg) for cp in checkpoints}
-        if len(cells) <= MAX_CHECKPOINT_CELLS:
-            break
-    return cell_deg
+        if len({weather.snap(cp.lat, cp.lon, cell_deg) for cp in checkpoints}) <= MAX_CHECKPOINT_CELLS:
+            return cell_deg
+    return CHECKPOINT_CELL_SIZES[-1]
 
 
 @dataclass
 class RoutePlan:
-    route: object
+    route: Route
     checkpoints: list
-    summary: object = None
+    summary: Summary = field(init=False)
 
     @property
     def arrival(self):
@@ -39,8 +39,8 @@ class TripPlan:
     routes: list  # RoutePlan, in the order the router returned them
     ranking: list  # route indexes
     reason: str
-    warning: object
-    heatmap: object
+    warning: str | None
+    heatmap: Heatmap
 
     @property
     def recommended(self):

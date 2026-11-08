@@ -52,3 +52,4 @@ def get_json(url, params=None, retries=RETRIES, timeout=TIMEOUT_S):
             reason = data.get('message') or data.get('reason') if isinstance(data, dict) else None
             raise ProviderError(f'{host}: {reason or f"request failed ({response.status_code})"}', data)
         return data
+    raise ProviderError(f'{host} did not respond. Try again shortly.')
