@@ -17,6 +17,16 @@ def trip_json(trip, request_data, origin, destination):
         'reason': trip.reason,
         'warning': trip.warning,
         'routes': [route_json(i, plan, trip.ranking.index(i) + 1) for i, plan in enumerate(trip.routes)],
+        'heatmap': heatmap_json(trip.heatmap),
+    }
+
+
+def heatmap_json(heatmap):
+    return {
+        'start': heatmap.start,
+        'cell_deg': heatmap.cell_deg,
+        'cells': heatmap.cells,
+        'values': heatmap.values,
     }
 
 
