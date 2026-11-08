@@ -1,0 +1,12 @@
+target-version = "py311"
+line-length = 120
+extend-exclude = [".venv"]
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+
+[lint.isort]
+known-first-party = ["api", "common", "config", "planner", "risk", "routing", "weather"]
+
+[format]
+quote-style = "single"
