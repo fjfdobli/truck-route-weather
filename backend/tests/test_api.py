@@ -18,7 +18,7 @@ def route_north(lon, miles, mph):
     return Route(coords, [METERS_PER_MILE] * miles, [3600 / mph] * miles, name=f'Road {lon}')
 
 
-def fake_weather(cells):
+def fake_weather(cells, until=None):
     start = int((timezone.now() - timedelta(hours=2)).timestamp()) // 3600 * 3600
     hours = 80
     series = {}

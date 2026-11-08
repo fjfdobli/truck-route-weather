@@ -13,8 +13,10 @@ from .models import NoRouteError, name_apart
 ROUTE_COUNT = 3
 MAX_OVERLAP = 0.8
 MAX_DETOUR = 2.5
-# Side offsets for detour waypoints, as a share of the straight-line trip length.
-DETOUR_OFFSETS = (0.08, -0.08, 0.15, -0.15, 0.3, -0.3, 0.45, -0.45)
+# Side offsets for detour waypoints, as a share of the straight-line trip length, most useful first.
+# The public router answers one request at a time, so they go in pairs and stop once there are three routes.
+DETOUR_OFFSETS = (0.15, -0.15, 0.08, -0.08, 0.3, -0.3, 0.45, -0.45)
+DETOUR_WAVE = 2
 # Loads are routed in 1,000 lb steps so nearby weights share cached routes.
 WEIGHT_STEP_LB = 1000
 
@@ -44,10 +46,13 @@ def find_routes(origin, destination, weight_lb=0):
 
     picked = []
     _take_distinct(first, picked)
-    if len(picked) < ROUTE_COUNT:
-        fastest = min(r.duration_s for r, _ in picked)
-        detours = [r for r in _detours(route, origin, destination) if r.duration_s <= fastest * MAX_DETOUR]
-        _take_distinct(sorted(detours, key=lambda r: r.duration_s), picked)
+    fastest = min(r.duration_s for r, _ in picked)
+    for i in range(0, len(DETOUR_OFFSETS), DETOUR_WAVE):
+        if len(picked) == ROUTE_COUNT:
+            break
+        wave = _detours(route, origin, destination, DETOUR_OFFSETS[i : i + DETOUR_WAVE])
+        usable = [r for r in wave if r.duration_s <= fastest * MAX_DETOUR]
+        _take_distinct(sorted(usable, key=lambda r: r.duration_s), picked)
 
     routes = [r for r, _ in picked]
     name_apart(routes)
@@ -70,9 +75,9 @@ def _overlap(a, b):
     return max(shared / len(a), shared / len(b))
 
 
-def _detours(route, origin, destination):
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        results = pool.map(lambda share: _route_via(route, origin, destination, share), DETOUR_OFFSETS)
+def _detours(route, origin, destination, offsets):
+    with ThreadPoolExecutor(max_workers=len(offsets)) as pool:
+        results = pool.map(lambda share: _route_via(route, origin, destination, share), offsets)
         return [r for r in results if r]
 
 

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import timedelta
 
 import risk
 import routing
@@ -6,6 +7,7 @@ import weather
 from routing import Route
 
 from .checkpoints import place_checkpoints
+from .heatmap import HOURS as HEAT_HOURS
 from .heatmap import Heatmap, corridor, fill
 from .recommend import Summary, explain, summarize, warning
 
@@ -59,7 +61,9 @@ def plan_trip(origin, destination, departure, weight_lb, interval_mi):
     cell_of = {id(cp): weather.snap(cp.lat, cp.lon, grid) for cp in checkpoints}
 
     # One batched weather lookup for every checkpoint and every heatmap cell.
-    series = weather.load(list(cell_of.values()) + heat_cells)
+    # Up to the last arrival or the end of the heatmap, plus the hour after (precipitation reads ahead).
+    until = max([plan.arrival for plan in plans] + [departure + timedelta(hours=HEAT_HOURS)]) + timedelta(hours=1)
+    series = weather.load(list(cell_of.values()) + heat_cells, until)
     for cp in checkpoints:
         cp.weather = series[cell_of[id(cp)]].at(cp.eta)
         cp.risk = risk.assess(cp.weather, weight_lb)

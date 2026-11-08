@@ -1,6 +1,7 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from django.core.cache import cache
 
@@ -51,16 +52,18 @@ def snap(lat, lon, cell_deg=0.1):
     return round(round(lat / cell_deg) * cell_deg, 4), round(round(lon / cell_deg) * cell_deg, 4)
 
 
-def load(cells):
-    """Hourly series for each (lat, lon) cell, fetching only what is not cached yet."""
+def load(cells, until):
+    """Hourly series for each (lat, lon) cell up to `until`, fetching only what the cache can't cover."""
     cells = list(dict.fromkeys(cells))
     found = cache.get_many([_key(c) for c in cells])
-    series = {c: found[_key(c)] for c in cells if _key(c) in found}
+    series = {c: s for c in cells if (s := found.get(_key(c))) and s.end >= until.timestamp()}
 
+    # Fewer days is a smaller, faster response: a trip leaving now needs about 3 of the 8.
+    days = min(max((until.date() - datetime.now(UTC).date()).days + 1, 1), FORECAST_DAYS)
     missing = [c for c in cells if c not in series]
     batches = [missing[i : i + BATCH_SIZE] for i in range(0, len(missing), BATCH_SIZE)]
     with ThreadPoolExecutor(max_workers=4) as pool:
-        for fetched in pool.map(_fetch, batches):
+        for fetched in pool.map(lambda batch: _fetch(batch, days), batches):
             series.update(fetched)
             cache.set_many({_key(c): s for c, s in fetched.items()}, CACHE_S)
     return series
@@ -70,7 +73,7 @@ def _key(cell):
     return f'wx:{cell[0]}:{cell[1]}'
 
 
-def _fetch(cells):
+def _fetch(cells, days=FORECAST_DAYS):
     data = get_json(
         OPEN_METEO_URL,
         {
@@ -81,7 +84,7 @@ def _fetch(cells):
             'precipitation_unit': 'inch',
             'timezone': 'GMT',
             'timeformat': 'unixtime',
-            'forecast_days': FORECAST_DAYS,
+            'forecast_days': days,
         },
     )
     if isinstance(data, dict):
