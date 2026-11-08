@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant UI as React app
+    participant API as api
+    participant P as planner
+    participant R as routing
+    participant W as weather
+    participant K as risk
+
+    UI->>API: POST /api/plan (places, departure, weight, interval)
+    API->>API: validate input, check the service area
+    API->>P: plan_trip(...)
+    P->>R: find_routes(origin, destination)
+    R-->>P: 3 routes (cached 30 min)
+    P->>P: place checkpoints and ETAs on each route
+    P->>P: pick weather grid sizes within the location budget
+    P->>W: load(all checkpoint cells + heatmap cells)
+    W-->>P: hourly series per cell (cached 30 min)
+    loop every checkpoint
+        P->>W: conditions at the checkpoint's ETA
+        P->>K: assess(conditions, weight)
+    end
+    P->>P: summarise, rank, explain, build 49 heatmap hours
+    P-->>API: trip plan
+    API-->>UI: JSON (gzip)

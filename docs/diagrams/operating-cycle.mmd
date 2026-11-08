@@ -1,0 +1,8 @@
+flowchart TB
+    P["Step 1: Plan<br/>12 to 48 hours before departure"] --> C["Step 2: Check<br/>the verdict and the lanes"]
+    C --> D{"Step 3: Decide<br/>worst level on the route?"}
+    D -- "Low or Moderate" --> B["Step 4: Brief the driver<br/>route, arrival, stretches to watch"]
+    D -- "High or worse" --> W["Try a later departure<br/>or another route"]
+    W --> C
+    B --> R["Step 5: Re-plan<br/>at departure, when it slips,<br/>every 6 hours on long trips"]
+    R --> C

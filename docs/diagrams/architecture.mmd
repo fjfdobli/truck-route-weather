@@ -1,0 +1,21 @@
+flowchart LR
+    subgraph Browser["React app"]
+        Form[trip-form] --> AppShell[app]
+        AppShell --> Map[map]
+        AppShell --> Timeline[timeline]
+        AppShell --> Forecast[forecast]
+        AppShell --> ApiClient[api]
+    end
+
+    ApiClient -- "POST /api/plan" --> Api
+
+    subgraph Server["Django service"]
+        Api[api] --> Planner[planner]
+        Planner --> Routing[routing]
+        Planner --> Weather[weather]
+        Planner --> Risk[risk]
+    end
+
+    Routing --> Photon[(Photon search)]
+    Routing --> OSRM[(OSRM routing)]
+    Weather --> OpenMeteo[(Open-Meteo forecast)]

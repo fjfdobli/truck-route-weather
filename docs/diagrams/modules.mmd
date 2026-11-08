@@ -1,0 +1,7 @@
+flowchart TB
+    api["api<br/>validate, shape JSON"] --> planner["planner<br/>orchestrate one trip"]
+    planner --> routing["routing<br/>places, routes"]
+    planner --> weather["weather<br/>hourly forecasts"]
+    planner --> risk["risk<br/>rules, pure"]
+    routing --> common["common<br/>geometry, HTTP client"]
+    weather --> common
