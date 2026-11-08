@@ -56,7 +56,7 @@ Text is geocoded with Photon, limited to a North America bounding box so suggest
 ### 4.2 Three routes (`routing/service.py`)
 
 1. Ask Valhalla's truck profile, with the load weight, for up to 3 alternatives. If it fails or the trip is over its 1,500 km limit, ask OSRM's car profile instead, and use the same router for every route of the trip.
-2. If fewer than 3 are distinct, request detour routes through side waypoints. A waypoint sits at the trip's midpoint, offset perpendicular to the trip by 8, 15, 30 or 45 percent of its straight-line length, on both sides. The 8 candidates are fetched 4 at a time.
+2. If fewer than 3 are distinct, request detour routes through side waypoints. A waypoint sits at the trip's midpoint, offset perpendicular to the trip by 8, 15, 30 or 45 percent of its straight-line length, on both sides. Candidates are fetched two at a time, 15 and 8 percent first, stopping once there are 3 routes: the public router answers one request per client at a time, so a bigger batch only queues.
 3. Keep a candidate only if it is no slower than 2.5 times the fastest route and shares less than 80 percent of its road with every route already kept. Overlap is measured on sets of coordinates rounded to about 100 m. That rejects near-copies and the out-and-back spurs a waypoint on a dead-end road produces.
 4. Take the fastest survivors until there are 3.
 
@@ -73,7 +73,7 @@ One linear pass along the road geometry:
 ### 4.4 Weather at the ETA (`weather/openmeteo.py`)
 
 - **Grid.** Each checkpoint is snapped to a grid cell, and all cells across all routes are deduplicated. The grid starts at 0.1 degrees (about 7 miles) and coarsens only when a trip would exceed the location budget (section 4.7).
-- **Batching.** Up to 100 cells per request, 4 requests in parallel. Each cell's 8-day hourly series is cached for 30 minutes.
+- **Batching.** Up to 100 cells per request, 4 requests in parallel, asking only for the days the trip needs (up to its last arrival or the end of the 48-hour window; usually 3 of the 8 on offer). Each cell's series is cached for 30 minutes and reused only if it reaches the trip's last hour.
 - **Reading a moment.** Wind is interpolated between the two surrounding hours. Rain and snow use the hour the truck is driving through: Open-Meteo stamps each hour's total at the hour's end, so a truck passing at 1:30 reads the 2:00 value. Rain includes showers. Past the end of the forecast, the result is "no forecast", never a guess.
 
 ### 4.5 Risk (`risk/rules.py`)

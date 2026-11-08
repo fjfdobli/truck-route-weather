@@ -246,16 +246,20 @@ docs/          architecture, decisions, API reference
 
 ## Performance
 
-Measured locally on a typical laptop and home connection:
+Measured on the live Render free instance from the Philippines, Nov 8, 2026 (Edge, 1440 px):
 
 | What | Result |
 |---|---|
-| First plan, short trip (Dallas to Houston) | about 5 s, mostly the public routing server |
-| First plan, coast to coast, weather every 10 miles | about 10 s |
-| Same trip again within 30 minutes | about 0.2 s (cached) |
-| Plan response size, gzipped | about 12 to 30 KB (route lines simplified for display) |
-| Moving the forecast slider | no network calls; all 49 hourly frames are prepared when the plan arrives |
-| JavaScript, gzipped | app code 11 KB; React, MUI and Leaflet in separately cached chunks |
+| New plan, short trips (Dallas to Houston, Erie to Syracuse, Denver to Kansas City) | 2.9 to 4.4 s |
+| Where that time goes | routing about 2.2 to 2.5 s, weather about 2 to 3 s, our own work about 30 ms |
+| Same trip again within 30 minutes | about 0.9 to 1.1 s (routes and weather cached) |
+| Place suggestions after typing | about 0.8 s, including a 250 ms pause while typing |
+| Page load | first byte 256 ms, first paint 816 ms, largest paint 896 ms |
+| JavaScript over the wire | about 226 KB gzipped (app code 12 KB); hashed files cached for a year |
+| Plan response, gzipped | about 10 to 14 KB (route lines simplified for display) |
+| Moving the forecast slider | 10 ms from key press to painted frame (median and 95th percentile); no network calls |
+
+Two choices keep plans fast. Weather is fetched only for the days a trip needs (usually 3 of 8), which makes responses about 60 percent smaller. Detour routes are requested two at a time, most useful first, stopping at three routes, because the public truck router answers one request per client at a time.
 
 ## Known limitations
 
